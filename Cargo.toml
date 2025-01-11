@@ -10,6 +10,8 @@ keywords = ["html", "parser", "html5", "pest", "dom", "fragment", "lite"]
 categories = ["parsing", "web-scraping", "html", "web-programming"]
 readme = "README.md"
 
+exclude = [".github", "target", "Cargo.lock"]
+
 [package.metadata.docs.rs]
 minimum-rust-version = "1.56.0"
 
