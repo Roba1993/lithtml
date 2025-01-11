@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0
+## 0.6.0
 - Added github ci/cd workflows
 - Simplyfied benchmark for better testing
 - Updated dependencies
