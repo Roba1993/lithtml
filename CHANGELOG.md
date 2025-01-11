@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.7.0-dev
+- Removed id as own element variable it's part of attributes now
 - Removed String allocations for better performance
 
 ## 0.6.0

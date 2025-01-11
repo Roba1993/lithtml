@@ -22,10 +22,6 @@ pub type Attributes<'s> = HashMap<&'s str, Option<&'s str>>;
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Element<'s> {
-    /// The id of the element
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<&'s str>,
-
     /// The name / tag of the element
     pub name: &'s str,
 
@@ -53,7 +49,6 @@ pub struct Element<'s> {
 impl<'s> Default for Element<'s> {
     fn default() -> Self {
         Self {
-            id: None,
             name: "",
             variant: ElementVariant::Void,
             classes: vec![],

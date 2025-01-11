@@ -7,7 +7,6 @@ Dom {
     children: [
         Element(
             Element {
-                id: None,
                 name: "template",
                 variant: Normal,
                 attributes: {},
@@ -15,7 +14,6 @@ Dom {
                 children: [
                     Element(
                         Element {
-                            id: None,
                             name: "h1",
                             variant: Normal,
                             attributes: {},
@@ -36,7 +34,6 @@ Dom {
                     ),
                     Element(
                         Element {
-                            id: None,
                             name: "p",
                             variant: Normal,
                             attributes: {},

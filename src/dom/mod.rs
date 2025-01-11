@@ -285,7 +285,6 @@ impl<'s> Dom<'s> {
                 Rule::attr => match Self::build_attribute(pair.into_inner()) {
                     Ok((attr_key, attr_value)) => {
                         match attr_key {
-                            "id" => element.id = attr_value,
                             "class" => {
                                 if let Some(classes) = attr_value {
                                     let classes = classes.split_whitespace().collect::<Vec<_>>();

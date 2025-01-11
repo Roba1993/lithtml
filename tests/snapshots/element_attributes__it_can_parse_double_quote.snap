@@ -6,9 +6,11 @@ expression: dom
   "treeType": "documentFragment",
   "children": [
     {
-      "id": "one",
       "name": "div",
-      "variant": "normal"
+      "variant": "normal",
+      "attributes": {
+        "id": "one"
+      }
     }
   ]
 }
