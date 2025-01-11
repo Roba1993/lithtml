@@ -16,18 +16,18 @@ pub enum ElementVariant {
     Void,
 }
 
-pub type Attributes = HashMap<String, Option<String>>;
+pub type Attributes<'s> = HashMap<&'s str, Option<&'s str>>;
 
 /// Most of the parsed html nodes are elements, except for text
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct Element {
+pub struct Element<'s> {
     /// The id of the element
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
+    pub id: Option<&'s str>,
 
     /// The name / tag of the element
-    pub name: String,
+    pub name: &'s str,
 
     /// The element variant, if it is of type void or not
     pub variant: ElementVariant,
@@ -35,31 +35,31 @@ pub struct Element {
     /// All of the elements attributes, except id and class
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     #[serde(serialize_with = "ordered_map")]
-    pub attributes: Attributes,
+    pub attributes: Attributes<'s>,
 
     /// All of the elements classes
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub classes: Vec<String>,
+    pub classes: Vec<&'s str>,
 
     /// All of the elements child nodes
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub children: Vec<Node>,
+    pub children: Vec<Node<'s>>,
 
     /// Span of the element in the parsed source
     #[serde(skip)]
-    pub source_span: SourceSpan
+    pub source_span: SourceSpan<'s>,
 }
 
-impl Default for Element {
+impl<'s> Default for Element<'s> {
     fn default() -> Self {
         Self {
             id: None,
-            name: "".to_string(),
+            name: "",
             variant: ElementVariant::Void,
             classes: vec![],
             attributes: HashMap::new(),
             children: vec![],
-            source_span: SourceSpan::default()
+            source_span: SourceSpan::default(),
         }
     }
 }

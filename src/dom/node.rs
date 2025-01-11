@@ -3,16 +3,16 @@ use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(untagged)]
-pub enum Node {
-    Text(String),
-    Element(Element),
-    Comment(String),
+pub enum Node<'s> {
+    Text(&'s str),
+    Element(Element<'s>),
+    Comment(&'s str),
 }
 
-impl Node {
+impl<'s> Node<'s> {
     pub fn text(&self) -> Option<&str> {
         match self {
-            Node::Text(t) => Some(t.as_str()),
+            Node::Text(t) => Some(t),
             _ => None,
         }
     }
@@ -26,14 +26,14 @@ impl Node {
 
     pub fn comment(&self) -> Option<&str> {
         match self {
-            Node::Comment(t) => Some(t.as_str()),
+            Node::Comment(t) => Some(t),
             _ => None,
         }
     }
 }
 
-impl<'a> IntoIterator for &'a Node {
-    type Item = &'a Node;
+impl<'a> IntoIterator for &'a Node<'a> {
+    type Item = &'a Node<'a>;
     type IntoIter = NodeIntoIterator<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -45,13 +45,13 @@ impl<'a> IntoIterator for &'a Node {
 }
 
 pub struct NodeIntoIterator<'a> {
-    node: &'a Node,
+    node: &'a Node<'a>,
     // We add/remove to this vec each time we go up/down a node three
-    index: Vec<(usize, &'a Node)>,
+    index: Vec<(usize, &'a Node<'a>)>,
 }
 
 impl<'a> Iterator for NodeIntoIterator<'a> {
-    type Item = &'a Node;
+    type Item = &'a Node<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // Get first child
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn node_utillity_functions() {
-        let node = Node::Text("test".to_string());
+        let node = Node::Text("test");
 
         assert_eq!(node.text(), Some("test"));
         assert_eq!(node.element(), None);
@@ -125,7 +125,7 @@ mod tests {
         assert_eq!(node.element(), Some(&Element::default()));
         assert_eq!(node.comment(), None);
 
-        let node = Node::Comment("test".to_string());
+        let node = Node::Comment("test");
 
         assert_eq!(node.text(), None);
         assert_eq!(node.element(), None);

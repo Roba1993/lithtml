@@ -1,19 +1,19 @@
-use serde::{Serialize};
+use serde::Serialize;
 
 /// Span of the information in the parsed source.
 #[derive(Debug, Default, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct SourceSpan {
-    pub text: String,
+pub struct SourceSpan<'s> {
+    pub text: &'s str,
     pub start_line: usize,
     pub end_line: usize,
     pub start_column: usize,
     pub end_column: usize,
 }
 
-impl SourceSpan {
+impl<'s> SourceSpan<'s> {
     pub fn new(
-        text: String,
+        text: &'s str,
         start_line: usize,
         end_line: usize,
         start_column: usize,
