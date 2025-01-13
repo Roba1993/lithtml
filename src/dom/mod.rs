@@ -2,6 +2,7 @@ use crate::Result;
 use options::FormattingOptions;
 use pest::{iterators::Pairs, Parser};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::{default::Default, fmt::Display};
 
 use crate::error::Error;
@@ -157,14 +158,15 @@ impl<'s> Dom<'s> {
                     }
                     let text = pair.as_str();
                     if !text.trim().is_empty() {
-                        dom.children.push(Node::Text(text));
+                        dom.children.push(Node::Text(Cow::Borrowed(text)));
                     }
                 }
 
                 // Store comments as a child, but it doesn't affect the document type selection
                 // until the next phase (validation).
                 Rule::node_comment => {
-                    dom.children.push(Node::Comment(pair.into_inner().as_str()));
+                    dom.children
+                        .push(Node::Comment(Cow::Borrowed(pair.into_inner().as_str())));
                 }
 
                 // Ignore 'end of input', which then allows the catch-all unreachable!() arm to

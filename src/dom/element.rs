@@ -2,6 +2,7 @@ use super::node::Node;
 use super::options::FormattingOptions;
 use super::span::SourceSpan;
 use serde::{Deserialize, Serialize, Serializer};
+use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
 use std::default::Default;
 use std::fmt::Display;
@@ -18,14 +19,14 @@ pub enum ElementVariant {
     Void,
 }
 
-pub type Attributes<'s> = HashMap<&'s str, Option<&'s str>>;
+pub type Attributes<'s> = HashMap<Cow<'s, str>, Option<Cow<'s, str>>>;
 
 /// Most of the parsed html nodes are elements, except for text
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Element<'s> {
     /// The name / tag of the element
-    pub name: &'s str,
+    pub name: Cow<'s, str>,
 
     /// The element variant, if it is of type void or not
     pub variant: ElementVariant,
@@ -39,11 +40,10 @@ pub struct Element<'s> {
     /// All of the elements classes
     #[serde(skip_serializing_if = "Vec::is_empty")]
     #[serde(default)]
-    pub classes: Vec<&'s str>,
+    pub classes: Vec<Cow<'s, str>>,
 
     /// All of the elements child nodes
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    #[serde(default)]
+    #[serde(default, borrow, skip_serializing_if = "Vec::is_empty")]
     pub children: Vec<Node<'s>>,
 
     /// Span of the element in the parsed source
@@ -67,7 +67,7 @@ impl<'s> Element<'s> {
         let attr_len: usize = self
             .attributes
             .iter()
-            .map(|(k, v)| k.len() + v.map(|v| v.len()).unwrap_or(0) + 4)
+            .map(|(k, v)| k.len() + v.as_ref().map(|v| v.len()).unwrap_or(0) + 4)
             .sum();
 
         // calculate the length of this element
@@ -148,7 +148,7 @@ impl<'s> Display for Element<'s> {
 impl<'s> Default for Element<'s> {
     fn default() -> Self {
         Self {
-            name: "",
+            name: Cow::Borrowed(""),
             variant: ElementVariant::Void,
             classes: vec![],
             attributes: HashMap::new(),

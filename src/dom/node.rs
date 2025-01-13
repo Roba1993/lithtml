@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{borrow::Cow, fmt::Display};
 
 use crate::{
     grammar::{Grammar, Rule},
@@ -16,8 +16,10 @@ use serde::{Deserialize, Serialize};
 #[serde(untagged)]
 pub enum Node<'s> {
     Element(Element<'s>),
-    Text(&'s str),
-    Comment(&'s str),
+    #[serde(borrow)]
+    Text(Cow<'s, str>),
+    #[serde(borrow)]
+    Comment(Cow<'s, str>),
 }
 
 impl<'s> Node<'s> {
@@ -43,6 +45,16 @@ impl<'s> Node<'s> {
             Node::Comment(t) => Some(t),
             _ => None,
         }
+    }
+
+    /// Create a new text node
+    pub fn new_text(text: &'s str) -> Self {
+        Self::Text(Cow::Borrowed(text))
+    }
+
+    /// Create a new comment node
+    pub fn new_comment(comment: &'s str) -> Self {
+        Self::Comment(Cow::Borrowed(comment))
     }
 
     /// Parse a dom from a html string
@@ -113,13 +125,13 @@ impl<'s> Node<'s> {
                 Rule::node_text => {
                     let text = pair.as_str();
                     if !text.trim().is_empty() {
-                        nodes.push(Node::Text(text));
+                        nodes.push(Node::Text(Cow::Borrowed(text)));
                     }
                 }
 
                 // Store comments as a child
                 Rule::node_comment => {
-                    nodes.push(Node::Comment(pair.into_inner().as_str()));
+                    nodes.push(Node::Comment(Cow::Borrowed(pair.into_inner().as_str())));
                 }
 
                 // Ignore 'end of input', which then allows the catch-all unreachable!() arm to
@@ -175,19 +187,19 @@ impl<'s> Node<'s> {
                 Rule::node_text | Rule::el_raw_text_content => {
                     let text = pair.as_str();
                     if !text.trim().is_empty() {
-                        element.children.push(Node::Text(text));
+                        element.children.push(Node::Text(Cow::Borrowed(text)));
                     }
                 }
                 Rule::node_comment => {
                     element
                         .children
-                        .push(Node::Comment(pair.into_inner().as_str()));
+                        .push(Node::Comment(Cow::Borrowed(pair.into_inner().as_str())));
                 }
                 // TODO: To enable some kind of validation we should probably align this with
                 // https://html.spec.whatwg.org/multipage/syntax.html#elements-2
                 // Also see element variants
                 Rule::el_name | Rule::el_void_name | Rule::el_raw_text_name => {
-                    element.name = pair.as_str();
+                    element.name = Cow::Borrowed(pair.as_str());
                 }
                 Rule::attr => match Self::build_attribute(pair.into_inner()) {
                     Ok((attr_key, attr_value)) => {
@@ -196,12 +208,15 @@ impl<'s> Node<'s> {
                                 if let Some(classes) = attr_value {
                                     let classes = classes.split_whitespace().collect::<Vec<_>>();
                                     for class in classes {
-                                        element.classes.push(class);
+                                        element.classes.push(Cow::Borrowed(class));
                                     }
                                 }
                             }
                             _ => {
-                                element.attributes.insert(attr_key, attr_value);
+                                element.attributes.insert(
+                                    Cow::Borrowed(attr_key),
+                                    attr_value.map(|s| Cow::Borrowed(s)),
+                                );
                             }
                         };
                     }
@@ -356,7 +371,7 @@ mod tests {
 
     #[test]
     fn node_utillity_functions() {
-        let node = Node::Text("test");
+        let node = Node::Text(Cow::Borrowed("test"));
 
         assert_eq!(node.text(), Some("test"));
         assert_eq!(node.element(), None);
@@ -368,7 +383,7 @@ mod tests {
         assert_eq!(node.element(), Some(&Element::default()));
         assert_eq!(node.comment(), None);
 
-        let node = Node::Comment("test");
+        let node = Node::Comment(Cow::Borrowed("test"));
 
         assert_eq!(node.text(), None);
         assert_eq!(node.element(), None);

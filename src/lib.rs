@@ -72,7 +72,7 @@
 //!
 //! fn main() -> Result<()> {
 //!     let mut dom = Dom::new();
-//!     dom.children.push(Node::Comment("Welcome to the test"));
+//!     dom.children.push(Node::new_comment("Welcome to the test"));
 //!     dom.children.push(Node::parse_json(
 //!         r#"{
 //!           "name": "div",

@@ -5,7 +5,7 @@ use lithtml::{Dom, Node, Result};
 #[test]
 fn it_can_create_artefacts() -> Result<()> {
     let mut dom = Dom::new();
-    dom.children.push(Node::Comment("Welcome to the test"));
+    dom.children.push(Node::new_comment("Welcome to the test"));
     dom.children.push(Node::parse_json(indoc!(
         r#"{
           "name": "div",
