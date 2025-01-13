@@ -1,10 +1,9 @@
-//! [![github]](https://github.com/mathiversen/html-parser)
-//!
+//! [![github]](https://github.com/Roba1993/lithtml)
 //! [github]: https://img.shields.io/badge/github-8da0cb?style=for-the-badge&labelColor=555555&logo=github
 //!
-//! # Html parser
-//!
-//! A simple and general purpose html/xhtml parser lib/bin, using [Pest](https://pest.rs/).
+//! # lithtml
+//! A lightweight and fast HTML/XHTML parser for Rust, designed to handle both full HTML documents and fragments.
+//! This parser uses [Pest](https://pest.rs/) for parsing and is forked from [html-parser](https://github.com/mathiversen/html-parser).
 //!
 //! ## Features
 //! - Parse html & xhtml (not xml processing instructions)
@@ -15,40 +14,11 @@
 //! - Parse custom, non-standard, elements; `<cat/>`, `<Cat/>` and `<C4-t/>`
 //! - Removes comments
 //! - Removes dangling elements
-//! - Iterate over all nodes in the dom tree
+//! - Iterate over all nodes in the dom three
 //!
-//! ## What is it not
+//! ## Examples
 //!
-//! - It's not a high-performance browser-grade parser
-//! - It's not suitable for html validation
-//! - It's not a parser that includes element selection or dom manipulation
-//!
-//! If your requirements matches any of the above, then you're most likely looking for one of the crates below:
-//!
-//! - [html5ever](https://crates.io/crates/html5ever)
-//! - [kuchiki](https://crates.io/crates/kuchiki)
-//! - [scraper](https://crates.io/crates/scraper)
-//! - or other crates using the `html5ever` parser
-//!
-//! ## Examples bin
-//!
-//! Parse html file
-//!
-//! ```shell
-//! html_parser index.html
-//!
-//! ```
-//!
-//! Parse stdin with pretty output
-//!
-//! ```shell
-//! curl <website> | html_parser -p
-//! ```
-//!
-//! ## Examples lib
-//!
-//! Parse html document
-//!
+//! Parse html document and print as json & formatted dom
 //! ```rust
 //!     use lithtml::Dom;
 //!
@@ -66,23 +36,25 @@
 //!                 </body>
 //!             </html>"#;
 //!
-//!         assert!(Dom::parse(html).is_ok());
+//!         let dom = Dom::parse(html).unwrap();
+//!         println!("{}", dom.to_json_pretty().unwrap());
+//!         println!("{}", dom);
 //!     }
 //! ```
 //!
-//! Parse html fragment
-//!
+//! Parse html fragment and print as json & formatted fragment
 //! ```rust
 //!     use lithtml::Dom;
 //!
 //!     fn main() {
 //!         let html = "<div id=cat />";
-//!         assert!(Dom::parse(html).is_ok());
+//!         let dom = Dom::parse(html).unwrap();
+//!         println!("{}", dom.to_json_pretty().unwrap());
+//!         println!("{}", dom);
 //!     }
 //! ```
 //!
 //! Print to json
-//!
 //! ```rust
 //!     use lithtml::{Dom, Result};
 //!

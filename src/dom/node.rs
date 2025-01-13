@@ -1,4 +1,6 @@
-use super::element::Element;
+use std::fmt::Display;
+
+use super::{element::Element, options::FormattingOptions};
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -29,6 +31,43 @@ impl<'s> Node<'s> {
             Node::Comment(t) => Some(t),
             _ => None,
         }
+    }
+}
+
+impl<'s> Node<'s> {
+    /// Get the text when the node is a text
+    pub fn get_text(&self) -> Option<&'s str> {
+        match self {
+            Node::Text(t) => Some(t),
+            _ => None,
+        }
+    }
+
+    pub fn fmt_opt<W>(&self, f: &mut W, o: &FormattingOptions, depth: usize) -> std::fmt::Result
+    where
+        W: std::fmt::Write,
+    {
+        match self {
+            Node::Text(text) => {
+                o.fmt_depth(f, depth)?;
+                write!(f, "{text}")?;
+            }
+            Node::Element(elem) => {
+                elem.fmt_opt(f, o, depth)?;
+            }
+            Node::Comment(comment) => {
+                o.fmt_depth(f, depth)?;
+                write!(f, "<!-- {comment} -->")?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl<'s> Display for Node<'s> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_opt(f, &FormattingOptions::pretty(), 0)
     }
 }
 

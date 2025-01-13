@@ -1,6 +1,5 @@
 # lithtml
 A lightweight and fast HTML/XHTML parser for Rust, designed to handle both full HTML documents and fragments.
-
 This parser uses [Pest](https://pest.rs/) for parsing and is forked from [html-parser](https://github.com/mathiversen/html-parser).
 
 ## Features
@@ -15,7 +14,7 @@ This parser uses [Pest](https://pest.rs/) for parsing and is forked from [html-p
 - Iterate over all nodes in the dom three
 
 ## Examples
-Parse html document
+Parse html document and print as json & formatted dom
 ```rust
     use lithtml::Dom;
 
@@ -32,17 +31,20 @@ Parse html document
                     </h1> <!-- comments & dangling elements are ignored -->
                 </body>
             </html>"#;
-
-        assert!(Dom::parse(html).is_ok());
+        let dom = Dom::parse(html).unwrap();
+        println!("{}", dom.to_json_pretty().unwrap());
+        println!("{}", dom);
     }
 ```
 
-Parse html fragment
+Parse html fragment and print as json & formatted fragment
 ```rust
     use lithtml::Dom;
 
     fn main() {
         let html = "<div id=cat />";
-        assert!(Dom::parse(html).is_ok());
+        let dom = Dom::parse(html).unwrap();
+        println!("{}", dom.to_json_pretty().unwrap());
+        println!("{}", dom);
     }
 ```

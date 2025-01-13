@@ -1,7 +1,8 @@
 use crate::Result;
+use options::FormattingOptions;
 use pest::{iterators::Pair, iterators::Pairs, Parser};
 use serde::Serialize;
-use std::default::Default;
+use std::{default::Default, fmt::Display};
 
 use crate::error::Error;
 use crate::grammar::Grammar;
@@ -10,6 +11,7 @@ use crate::Rule;
 pub mod element;
 pub mod formatting;
 pub mod node;
+pub mod options;
 pub mod span;
 
 use crate::dom::span::SourceSpan;
@@ -83,6 +85,16 @@ impl<'s> Dom<'s> {
 
     pub fn to_json_pretty(&self) -> Result<String> {
         Ok(serde_json::to_string_pretty(self)?)
+    }
+
+    pub fn fmt_opt<W>(&self, f: &mut W, o: &FormattingOptions) -> std::fmt::Result
+    where
+        W: std::fmt::Write,
+    {
+        for child in self.children.iter() {
+            child.fmt_opt(f, o, 0)?;
+        }
+        Ok(())
     }
 
     fn build_dom(pairs: Pairs<'s, Rule>) -> Result<Self> {
@@ -359,5 +371,11 @@ impl<'s> Dom<'s> {
             }
         }
         Ok(attribute)
+    }
+}
+
+impl<'s> Display for Dom<'s> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_opt(f, &FormattingOptions::pretty())
     }
 }

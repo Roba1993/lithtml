@@ -1,5 +1,5 @@
 use indoc::indoc;
-use insta::assert_json_snapshot;
+use insta::{assert_json_snapshot, assert_snapshot};
 use lithtml::{Dom, Result};
 
 #[test]
@@ -29,5 +29,26 @@ fn it_can_output_complex_html_as_json() -> Result<()> {
     );
     let dom = Dom::parse(html)?;
     assert_json_snapshot!(dom);
+    Ok(())
+}
+
+#[test]
+fn it_can_output_complex_html_as_pretty_html() -> Result<()> {
+    let html = indoc!(
+        "<html lang=\"de\">
+        <head>
+            <title>Hier ist ein Titel</title>
+        </head>
+            <body>
+                <h1>Hello World!</h1>
+                <!-- Don't take the next sentence too serious -->
+                <p>Deutschland ist definitiv wesentlich besser als Schweden in Eishockey.</p>
+                <!-- Testing long attributes -->
+                <div long_attribute=\"Hallo Welt\" other_long_attribute=\"Es ist wirklich schön\"></div>
+            </body>
+        </html>"
+    );
+    let dom = Dom::parse(html)?;
+    assert_snapshot!(dom);
     Ok(())
 }

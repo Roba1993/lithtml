@@ -1,0 +1,22 @@
+---
+source: tests/output.rs
+assertion_line: 52
+expression: dom
+---
+<html lang='de'>
+	<head>
+		<title>Hier ist ein Titel</title>
+	</head>
+	<body>
+		<h1>Hello World!</h1>
+		<!-- Don't take the next sentence too serious -->
+		<p>
+			Deutschland ist definitiv wesentlich besser als Schweden in Eishockey.
+		</p>
+		<!-- Testing long attributes -->
+		<div
+			long_attribute='Hallo Welt'
+			other_long_attribute='Es ist wirklich schön'
+		/>
+	</body>
+</html>
