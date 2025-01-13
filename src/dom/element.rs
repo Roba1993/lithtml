@@ -1,14 +1,14 @@
 use super::node::Node;
 use super::options::FormattingOptions;
 use super::span::SourceSpan;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer};
 use std::collections::{BTreeMap, HashMap};
 use std::default::Default;
 use std::fmt::Display;
 use std::result::Result;
 
 /// Normal: `<div></div>` or Void: `<meta/>`and `<meta>`
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 // TODO: Align with: https://html.spec.whatwg.org/multipage/syntax.html#elements-2
 pub enum ElementVariant {
@@ -21,7 +21,7 @@ pub enum ElementVariant {
 pub type Attributes<'s> = HashMap<&'s str, Option<&'s str>>;
 
 /// Most of the parsed html nodes are elements, except for text
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Element<'s> {
     /// The name / tag of the element
@@ -33,18 +33,22 @@ pub struct Element<'s> {
     /// All of the elements attributes, except id and class
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     #[serde(serialize_with = "ordered_map")]
+    #[serde(default)]
     pub attributes: Attributes<'s>,
 
     /// All of the elements classes
     #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
     pub classes: Vec<&'s str>,
 
     /// All of the elements child nodes
     #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default)]
     pub children: Vec<Node<'s>>,
 
     /// Span of the element in the parsed source
     #[serde(skip)]
+    #[serde(default)]
     pub source_span: SourceSpan<'s>,
 }
 
@@ -112,7 +116,7 @@ impl<'s> Element<'s> {
         }
 
         // print single text children in the same line when not too long
-        if let Some(text) = self.children.get(0).and_then(|c| c.get_text()) {
+        if let Some(text) = self.children.get(0).and_then(|c| c.text()) {
             if self.children.len() == 1
                 && depth + o.tab_size as usize + text.len() + self.name.len() + 3 <= o.max_len
             {

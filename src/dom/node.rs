@@ -1,17 +1,27 @@
 use std::fmt::Display;
 
-use super::{element::Element, options::FormattingOptions};
-use serde::Serialize;
+use crate::{
+    grammar::{Grammar, Rule},
+    ElementVariant, Error,
+};
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
+use super::{element::Element, formatting, options::FormattingOptions, span::SourceSpan, Result};
+use pest::{
+    iterators::{Pair, Pairs},
+    Parser,
+};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum Node<'s> {
-    Text(&'s str),
     Element(Element<'s>),
+    Text(&'s str),
     Comment(&'s str),
 }
 
 impl<'s> Node<'s> {
+    /// Get the text when it's a text node
     pub fn text(&self) -> Option<&str> {
         match self {
             Node::Text(t) => Some(t),
@@ -19,6 +29,7 @@ impl<'s> Node<'s> {
         }
     }
 
+    /// Get the elemnt when it's a element node
     pub fn element(&self) -> Option<&Element> {
         match self {
             Node::Element(e) => Some(e),
@@ -26,21 +37,36 @@ impl<'s> Node<'s> {
         }
     }
 
+    /// Get the comment when it's a comment node
     pub fn comment(&self) -> Option<&str> {
         match self {
             Node::Comment(t) => Some(t),
             _ => None,
         }
     }
-}
 
-impl<'s> Node<'s> {
-    /// Get the text when the node is a text
-    pub fn get_text(&self) -> Option<&'s str> {
-        match self {
-            Node::Text(t) => Some(t),
-            _ => None,
-        }
+    /// Parse a dom from a html string
+    pub fn parse(input: &'s str) -> Result<Vec<Self>> {
+        let pairs = match Grammar::parse(Rule::html, input) {
+            Ok(pairs) => pairs,
+            Err(error) => return Err(formatting::error_msg(error)),
+        };
+        Self::build_nodes(pairs)
+    }
+
+    /// Create the node from a json string
+    pub fn parse_json(json: &'s str) -> Result<Self> {
+        Ok(serde_json::from_str(json)?)
+    }
+
+    /// Output the node as a json formatted string
+    pub fn to_json(&self) -> Result<String> {
+        Ok(serde_json::to_string(self)?)
+    }
+
+    /// Output the node as a pretty json formatted string
+    pub fn to_json_pretty(&self) -> Result<String> {
+        Ok(serde_json::to_string_pretty(self)?)
     }
 
     pub fn fmt_opt<W>(&self, f: &mut W, o: &FormattingOptions, depth: usize) -> std::fmt::Result
@@ -48,12 +74,12 @@ impl<'s> Node<'s> {
         W: std::fmt::Write,
     {
         match self {
+            Node::Element(elem) => {
+                elem.fmt_opt(f, o, depth)?;
+            }
             Node::Text(text) => {
                 o.fmt_depth(f, depth)?;
                 write!(f, "{text}")?;
-            }
-            Node::Element(elem) => {
-                elem.fmt_opt(f, o, depth)?;
             }
             Node::Comment(comment) => {
                 o.fmt_depth(f, depth)?;
@@ -62,6 +88,184 @@ impl<'s> Node<'s> {
         }
 
         Ok(())
+    }
+
+    fn build_nodes(pairs: Pairs<'s, Rule>) -> Result<Vec<Self>> {
+        let mut nodes = Vec::new();
+
+        for pair in pairs {
+            match pair.as_rule() {
+                // A <!DOCTYPE> tag means a full-fledged document.  Because it's a node, we don't use it
+                Rule::doctype => (),
+
+                // If we see an element, build the sub-tree and add it as a child.
+                // Warnings are ignored
+                Rule::node_element => match Self::build_node_element(pair, &mut Vec::new()) {
+                    Ok(el) => {
+                        if let Some(node) = el {
+                            nodes.push(node);
+                        }
+                    }
+                    Err(_) => {}
+                },
+
+                // Similar to an element, we add it as a child
+                Rule::node_text => {
+                    let text = pair.as_str();
+                    if !text.trim().is_empty() {
+                        nodes.push(Node::Text(text));
+                    }
+                }
+
+                // Store comments as a child
+                Rule::node_comment => {
+                    nodes.push(Node::Comment(pair.into_inner().as_str()));
+                }
+
+                // Ignore 'end of input', which then allows the catch-all unreachable!() arm to
+                // function properly.
+                Rule::EOI => (),
+
+                // This should be unreachable, due to the way the grammar is written
+                _ => unreachable!("[build nodes] unknown rule: {:?}", pair.as_rule()),
+            };
+        }
+
+        // The result are validated nodes
+        Ok(nodes)
+    }
+
+    pub(super) fn build_node_element(
+        pair: Pair<'s, Rule>,
+        warnings: &mut Vec<String>,
+    ) -> Result<Option<Node<'s>>> {
+        let source_span = {
+            let pair_span = pair.as_span();
+            let (start_line, start_column) = pair_span.start_pos().line_col();
+            let (end_line, end_column) = pair_span.end_pos().line_col();
+
+            SourceSpan::new(
+                pair_span.as_str(),
+                start_line,
+                end_line,
+                start_column,
+                end_column,
+            )
+        };
+
+        let mut element = Element {
+            source_span,
+            ..Element::default()
+        };
+
+        for pair in pair.into_inner() {
+            match pair.as_rule() {
+                Rule::node_element | Rule::el_raw_text => {
+                    match Self::build_node_element(pair, warnings) {
+                        Ok(el) => {
+                            if let Some(child_element) = el {
+                                element.children.push(child_element)
+                            }
+                        }
+                        Err(error) => {
+                            warnings.push(format!("{}", error));
+                        }
+                    }
+                }
+                Rule::node_text | Rule::el_raw_text_content => {
+                    let text = pair.as_str();
+                    if !text.trim().is_empty() {
+                        element.children.push(Node::Text(text));
+                    }
+                }
+                Rule::node_comment => {
+                    element
+                        .children
+                        .push(Node::Comment(pair.into_inner().as_str()));
+                }
+                // TODO: To enable some kind of validation we should probably align this with
+                // https://html.spec.whatwg.org/multipage/syntax.html#elements-2
+                // Also see element variants
+                Rule::el_name | Rule::el_void_name | Rule::el_raw_text_name => {
+                    element.name = pair.as_str();
+                }
+                Rule::attr => match Self::build_attribute(pair.into_inner()) {
+                    Ok((attr_key, attr_value)) => {
+                        match attr_key {
+                            "class" => {
+                                if let Some(classes) = attr_value {
+                                    let classes = classes.split_whitespace().collect::<Vec<_>>();
+                                    for class in classes {
+                                        element.classes.push(class);
+                                    }
+                                }
+                            }
+                            _ => {
+                                element.attributes.insert(attr_key, attr_value);
+                            }
+                        };
+                    }
+                    Err(error) => {
+                        warnings.push(format!("{}", error));
+                    }
+                },
+                Rule::el_normal_end | Rule::el_raw_text_end => {
+                    element.variant = ElementVariant::Normal;
+                    break;
+                }
+                Rule::el_dangling => (),
+                Rule::EOI => (),
+                _ => {
+                    return Err(Error::Parsing(format!(
+                        "Failed to create element at rule: {:?}",
+                        pair.as_rule()
+                    )))
+                }
+            }
+        }
+        if element.name != "" {
+            Ok(Some(Node::Element(element)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn build_attribute(pairs: Pairs<'s, Rule>) -> Result<(&'s str, Option<&'s str>)> {
+        let mut attribute = ("", None);
+        for pair in pairs {
+            match pair.as_rule() {
+                Rule::attr_key => {
+                    attribute.0 = pair.as_str().trim();
+                }
+                Rule::attr_non_quoted => {
+                    attribute.1 = Some(pair.as_str().trim());
+                }
+                Rule::attr_quoted => {
+                    let inner_pair = pair
+                        .into_inner()
+                        .into_iter()
+                        .next()
+                        .expect("attribute value");
+
+                    match inner_pair.as_rule() {
+                        Rule::attr_value => attribute.1 = Some(inner_pair.as_str()),
+                        _ => {
+                            return Err(Error::Parsing(format!(
+                                "Failed to parse attr value: {:?}",
+                                inner_pair.as_rule()
+                            )))
+                        }
+                    }
+                }
+                _ => {
+                    return Err(Error::Parsing(format!(
+                        "Failed to parse attr: {:?}",
+                        pair.as_rule()
+                    )))
+                }
+            }
+        }
+        Ok(attribute)
     }
 }
 

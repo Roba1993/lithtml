@@ -46,7 +46,7 @@ fn main() -> Result<()> {
     let dom = Dom::parse(&content)?;
 
     if opt.debug {
-        for error in &dom.errors {
+        for error in &dom.warnings {
             println!("# {}", error);
         }
     }

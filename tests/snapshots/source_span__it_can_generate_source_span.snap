@@ -1,5 +1,6 @@
 ---
 source: tests/source_span.rs
+assertion_line: 14
 expression: dom
 ---
 Dom {
@@ -63,5 +64,5 @@ Dom {
             },
         ),
     ],
-    errors: [],
+    warnings: [],
 }

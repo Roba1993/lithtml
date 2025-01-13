@@ -12,6 +12,8 @@ This parser uses [Pest](https://pest.rs/) for parsing and is forked from [html-p
 - Removes comments
 - Removes dangling elements
 - Iterate over all nodes in the dom three
+- Returned structured json or html
+- Create a dom manually
 
 ## Examples
 Parse html document and print as json & formatted dom
@@ -47,4 +49,42 @@ Parse html fragment and print as json & formatted fragment
         println!("{}", dom.to_json_pretty().unwrap());
         println!("{}", dom);
     }
+```
+
+Create a dom manually
+```rust
+use lithtml::{Dom, Node, Result};
+
+fn main() -> Result<()> {
+    let mut dom = Dom::new();
+    dom.children.push(Node::Comment("Welcome to the test"));
+    dom.children.push(Node::parse_json(
+        r#"{
+          "name": "div",
+          "variant": "normal",
+          "children": [
+            {
+              "name": "h1",
+              "variant": "normal",
+              "children": [
+                "Tjena världen!"
+              ]
+            },
+            {
+              "name": "p",
+              "variant": "normal",
+              "children": [
+                "Tänkte bara informera om att Sverige är bättre än Finland i ishockey."
+              ]
+            }
+          ]
+        }"#
+    )?);
+    dom.children.append(&mut Node::parse(
+        r#"<div>Testing</div><p>Multiple elements from node</p>"#,
+    )?);
+
+    println!("{}", dom);
+    Ok(())
+}
 ```

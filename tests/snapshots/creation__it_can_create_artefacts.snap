@@ -1,0 +1,14 @@
+---
+source: tests/creation.rs
+assertion_line: 35
+expression: dom
+---
+<!-- Welcome to the test -->
+<div>
+	<h1>Tjena världen!</h1>
+	<p>
+		Tänkte bara informera om att Sverige är bättre än Finland i ishockey.
+	</p>
+</div>
+<div>Testing</div>
+<p>Multiple elements from node</p>

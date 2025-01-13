@@ -1,7 +1,7 @@
 use crate::Result;
 use options::FormattingOptions;
-use pest::{iterators::Pair, iterators::Pairs, Parser};
-use serde::Serialize;
+use pest::{iterators::Pairs, Parser};
+use serde::{Deserialize, Serialize};
 use std::{default::Default, fmt::Display};
 
 use crate::error::Error;
@@ -14,12 +14,10 @@ pub mod node;
 pub mod options;
 pub mod span;
 
-use crate::dom::span::SourceSpan;
-use element::{Element, ElementVariant};
 use node::Node;
 
 /// Document, DocumentFragment or Empty
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum DomVariant {
     /// This means that the parsed html had the representation of an html document. The doctype is optional but a document should only have one root node with the name of html.
@@ -45,19 +43,19 @@ pub enum DomVariant {
 }
 
 /// **The main struct** & the result of the parsed html
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Dom<'s> {
     /// The type of the tree that was parsed
     pub tree_type: DomVariant,
 
     /// All of the root children in the tree
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(borrow, skip_serializing_if = "Vec::is_empty")]
     pub children: Vec<Node<'s>>,
 
-    /// A collection of all errors during parsing
+    /// A collection of all warnings during parsing
     #[serde(skip_serializing)]
-    pub errors: Vec<String>,
+    pub warnings: Vec<String>,
 }
 
 impl<'s> Default for Dom<'s> {
@@ -65,34 +63,49 @@ impl<'s> Default for Dom<'s> {
         Self {
             tree_type: DomVariant::Empty,
             children: vec![],
-            errors: vec![],
+            warnings: vec![],
         }
     }
 }
 
 impl<'s> Dom<'s> {
+    /// Create a new empty dom element
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Parse a dom from a html string
     pub fn parse(input: &'s str) -> Result<Self> {
         let pairs = match Grammar::parse(Rule::html, input) {
             Ok(pairs) => pairs,
-            Err(error) => return formatting::error_msg(error),
+            Err(error) => return Err(formatting::error_msg(error)),
         };
         Self::build_dom(pairs)
     }
 
+    /// Create the dom from a json string
+    pub fn parse_json(json: &'s str) -> Result<Self> {
+        Ok(serde_json::from_str(json)?)
+    }
+
+    /// Output the dom as a json formatted string
     pub fn to_json(&self) -> Result<String> {
         Ok(serde_json::to_string(self)?)
     }
 
+    /// Output the dom as a pretty json formatted string
     pub fn to_json_pretty(&self) -> Result<String> {
         Ok(serde_json::to_string_pretty(self)?)
     }
 
+    /// Write the dom as a html string with the given formatting options
     pub fn fmt_opt<W>(&self, f: &mut W, o: &FormattingOptions) -> std::fmt::Result
     where
         W: std::fmt::Write,
     {
         for child in self.children.iter() {
             child.fmt_opt(f, o, 0)?;
+            write!(f, "\n")?;
         }
         Ok(())
     }
@@ -122,7 +135,7 @@ impl<'s> Dom<'s> {
 
                 // If we see an element, build the sub-tree and add it as a child.  If we don't
                 // have a document type yet (i.e. "empty"), select DocumentFragment
-                Rule::node_element => match Self::build_node_element(pair, &mut dom) {
+                Rule::node_element => match Node::build_node_element(pair, &mut dom.warnings) {
                     Ok(el) => {
                         if let Some(node) = el {
                             if dom.tree_type == DomVariant::Empty {
@@ -132,7 +145,7 @@ impl<'s> Dom<'s> {
                         }
                     }
                     Err(error) => {
-                        dom.errors.push(format!("{}", error));
+                        dom.warnings.push(format!("{}", error));
                     }
                 },
 
@@ -241,136 +254,6 @@ impl<'s> Dom<'s> {
 
         // The result is the validated tree
         Ok(dom)
-    }
-
-    fn build_node_element(pair: Pair<'s, Rule>, dom: &mut Dom) -> Result<Option<Node<'s>>> {
-        let source_span = {
-            let pair_span = pair.as_span();
-            let (start_line, start_column) = pair_span.start_pos().line_col();
-            let (end_line, end_column) = pair_span.end_pos().line_col();
-
-            SourceSpan::new(
-                pair_span.as_str(),
-                start_line,
-                end_line,
-                start_column,
-                end_column,
-            )
-        };
-
-        let mut element = Element {
-            source_span,
-            ..Element::default()
-        };
-
-        for pair in pair.into_inner() {
-            match pair.as_rule() {
-                Rule::node_element | Rule::el_raw_text => {
-                    match Self::build_node_element(pair, dom) {
-                        Ok(el) => {
-                            if let Some(child_element) = el {
-                                element.children.push(child_element)
-                            }
-                        }
-                        Err(error) => {
-                            dom.errors.push(format!("{}", error));
-                        }
-                    }
-                }
-                Rule::node_text | Rule::el_raw_text_content => {
-                    let text = pair.as_str();
-                    if !text.trim().is_empty() {
-                        element.children.push(Node::Text(text));
-                    }
-                }
-                Rule::node_comment => {
-                    element
-                        .children
-                        .push(Node::Comment(pair.into_inner().as_str()));
-                }
-                // TODO: To enable some kind of validation we should probably align this with
-                // https://html.spec.whatwg.org/multipage/syntax.html#elements-2
-                // Also see element variants
-                Rule::el_name | Rule::el_void_name | Rule::el_raw_text_name => {
-                    element.name = pair.as_str();
-                }
-                Rule::attr => match Self::build_attribute(pair.into_inner()) {
-                    Ok((attr_key, attr_value)) => {
-                        match attr_key {
-                            "class" => {
-                                if let Some(classes) = attr_value {
-                                    let classes = classes.split_whitespace().collect::<Vec<_>>();
-                                    for class in classes {
-                                        element.classes.push(class);
-                                    }
-                                }
-                            }
-                            _ => {
-                                element.attributes.insert(attr_key, attr_value);
-                            }
-                        };
-                    }
-                    Err(error) => {
-                        dom.errors.push(format!("{}", error));
-                    }
-                },
-                Rule::el_normal_end | Rule::el_raw_text_end => {
-                    element.variant = ElementVariant::Normal;
-                    break;
-                }
-                Rule::el_dangling => (),
-                Rule::EOI => (),
-                _ => {
-                    return Err(Error::Parsing(format!(
-                        "Failed to create element at rule: {:?}",
-                        pair.as_rule()
-                    )))
-                }
-            }
-        }
-        if element.name != "" {
-            Ok(Some(Node::Element(element)))
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn build_attribute(pairs: Pairs<'s, Rule>) -> Result<(&'s str, Option<&'s str>)> {
-        let mut attribute = ("", None);
-        for pair in pairs {
-            match pair.as_rule() {
-                Rule::attr_key => {
-                    attribute.0 = pair.as_str().trim();
-                }
-                Rule::attr_non_quoted => {
-                    attribute.1 = Some(pair.as_str().trim());
-                }
-                Rule::attr_quoted => {
-                    let inner_pair = pair
-                        .into_inner()
-                        .into_iter()
-                        .next()
-                        .expect("attribute value");
-
-                    match inner_pair.as_rule() {
-                        Rule::attr_value => attribute.1 = Some(inner_pair.as_str()),
-                        _ => {
-                            return Err(Error::Parsing(format!(
-                                "Failed to parse attr value: {:?}",
-                                inner_pair.as_rule()
-                            )))
-                        }
-                    }
-                }
-                _ => {
-                    return Err(Error::Parsing(format!(
-                        "Failed to parse attr: {:?}",
-                        pair.as_rule()
-                    )))
-                }
-            }
-        }
-        Ok(attribute)
     }
 }
 

@@ -1,11 +1,10 @@
 use crate::error::Error;
-use crate::Result;
 use crate::Rule;
 use pest::error::Error as PestError;
 
 /// This function abstracts the formatting of errors away from the core logic inside parser,
 /// so that the file is easier to read.
-pub fn error_msg<'s>(error: PestError<Rule>) -> Result<super::Dom<'s>> {
+pub fn error_msg<'s>(error: PestError<Rule>) -> Error {
     let message = error.renamed_rules(|rule| match *rule {
         Rule::EOI => "end of input".to_string(),
         Rule::doctype => "doctype element".to_string(),
@@ -25,5 +24,5 @@ pub fn error_msg<'s>(error: PestError<Rule>) -> Result<super::Dom<'s>> {
         // TODO: Continue with this
         x => format!("{:?} ", x),
     });
-    Err(Error::Parsing(message.to_string()))
+    Error::Parsing(message.to_string())
 }
