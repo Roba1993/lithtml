@@ -2,7 +2,7 @@
 A lightweight and fast HTML/XHTML parser for Rust, designed to handle both full HTML documents and fragments.
 This parser uses [Pest](https://pest.rs/) for parsing and is forked from [html-parser](https://github.com/mathiversen/html-parser).
 
-![logo](.assets/logo.png)
+![logo](./assets/logo.png)
 
 ## Features
 - Parse html & xhtml (not xml processing instructions)
