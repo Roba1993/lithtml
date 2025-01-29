@@ -88,7 +88,10 @@ impl<'s> Element<'s> {
         for (k, v) in ordered_attributes {
             match v {
                 Some(v) => {
-                    let v = v.replace('\"', "\\\"").replace('\'', "\\\'");
+                    let v = match o.double_quot {
+                        true => v.replace('\"', "\\\""),
+                        false => v.replace('\'', "\\\'"),
+                    };
                     write!(f, "{0}{k}={1}{v}{1}", c_inline, o.quotes())?
                 }
                 None => write!(f, "{0}{k}", c_inline)?,

@@ -35,7 +35,7 @@ fn it_can_output_complex_html_as_json() -> Result<()> {
 #[test]
 fn it_can_output_complex_html_as_pretty_html() -> Result<()> {
     let html = indoc!(
-        "<html lang=\"de\">
+        r#"<html lang="de">
         <head>
             <title>Hier ist ein Titel</title>
         </head>
@@ -44,13 +44,15 @@ fn it_can_output_complex_html_as_pretty_html() -> Result<()> {
                 <!-- Don't take the next sentence too serious -->
                 <p>Deutschland ist definitiv wesentlich besser als Schweden in Eishockey.</p>
                 <!-- Testing long attributes -->
-                <div long_attribute=\"Hallo Welt\" other_long_attribute=\"Es ist wirklich schön\"></div>
+                <div long_attribute="Hallo Welt" other_long_attribute="Es ist wirklich schön"></div>
                 <!-- Testing quotes -->
-                <div cat=\"she says: \'mjau mjau\'\" horse='horse says:\"pffff\"'  />
+                <div cat="she says: 'mjau mjau'" horse='horse says:"pffff"' />
             </body>
-        </html>"
+        </html>"#
     );
     let dom = Dom::parse(html)?;
-    assert_snapshot!(dom);
+    let gen_html = dom.to_string();
+    let dom_dom = Dom::parse(&gen_html)?;
+    assert_snapshot!(dom_dom);
     Ok(())
 }

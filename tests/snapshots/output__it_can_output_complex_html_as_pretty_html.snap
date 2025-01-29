@@ -1,7 +1,7 @@
 ---
 source: tests/output.rs
-assertion_line: 54
-expression: dom
+assertion_line: 56
+expression: dom_dom
 ---
 <html lang='de'>
 	<head>
@@ -11,7 +11,9 @@ expression: dom
 		<h1>Hello World!</h1>
 		<!-- Don't take the next sentence too serious -->
 		<p>
+			
 			Deutschland ist definitiv wesentlich besser als Schweden in Eishockey.
+		
 		</p>
 		<!-- Testing long attributes -->
 		<div
@@ -21,7 +23,8 @@ expression: dom
 		<!-- Testing quotes -->
 		<div
 			cat='she says: \'mjau mjau\''
-			horse='horse says:\"pffff\"'
+			horse='horse says:"pffff"'
 		/>
+	
 	</body>
 </html>
