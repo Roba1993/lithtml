@@ -23,6 +23,13 @@ fn it_can_parse_no_quote() -> Result<()> {
     Ok(())
 }
 #[test]
+fn it_can_parse_attribute_key_mixed_case_symbols_only() -> Result<()> {
+    let html = "<div data-cat />";
+    let dom = Dom::parse(html)?;
+    assert_json_snapshot!(dom);
+    Ok(())
+}
+#[test]
 fn it_can_parse_attribute_key_mixed_case_symbols() -> Result<()> {
     let html = "<div data-cat='morris'></div>";
     let dom = Dom::parse(html)?;

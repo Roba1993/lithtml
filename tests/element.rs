@@ -38,6 +38,13 @@ fn it_can_parse_one_element_mixed_case_numbers_symbols() -> Result<()> {
     Ok(())
 }
 #[test]
+fn it_can_parse_one_element_mixed_symbols() -> Result<()> {
+    let html = "<chart-data />";
+    let dom = Dom::parse(html)?;
+    assert_json_snapshot!(dom);
+    Ok(())
+}
+#[test]
 fn it_can_parse_multiple_elements() -> Result<()> {
     let html = "<div/><div/>";
     let dom = Dom::parse(html)?;
