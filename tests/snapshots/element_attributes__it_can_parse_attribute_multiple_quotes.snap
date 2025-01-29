@@ -1,0 +1,18 @@
+---
+source: tests/element_attributes.rs
+assertion_line: 114
+expression: dom
+---
+{
+  "treeType": "documentFragment",
+  "children": [
+    {
+      "name": "div",
+      "variant": "void",
+      "attributes": {
+        "cat": "she says: 'mjau mjau'",
+        "horse": "horse says:\"pffff\""
+      }
+    }
+  ]
+}

@@ -107,3 +107,10 @@ fn it_keeps_spaces_for_non_classes() -> Result<()> {
     assert_json_snapshot!(dom);
     Ok(())
 }
+#[test]
+fn it_can_parse_attribute_multiple_quotes() -> Result<()> {
+    let html = "<div cat=\"she says: \'mjau mjau\'\" horse='horse says:\"pffff\"' />";
+    let dom = Dom::parse(html)?;
+    assert_json_snapshot!(dom);
+    Ok(())
+}

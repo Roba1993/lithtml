@@ -1,6 +1,6 @@
 ---
 source: tests/output.rs
-assertion_line: 52
+assertion_line: 54
 expression: dom
 ---
 <html lang='de'>
@@ -17,6 +17,11 @@ expression: dom
 		<div
 			long_attribute='Hallo Welt'
 			other_long_attribute='Es ist wirklich schön'
+		/>
+		<!-- Testing quotes -->
+		<div
+			cat='she says: \'mjau mjau\''
+			horse='horse says:\"pffff\"'
 		/>
 	</body>
 </html>

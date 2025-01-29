@@ -87,7 +87,10 @@ impl<'s> Element<'s> {
         let ordered_attributes: BTreeMap<_, _> = self.attributes.iter().collect();
         for (k, v) in ordered_attributes {
             match v {
-                Some(v) => write!(f, "{0}{k}={1}{v}{1}", c_inline, o.quotes())?,
+                Some(v) => {
+                    let v = v.replace('\"', "\\\"").replace('\'', "\\\'");
+                    write!(f, "{0}{k}={1}{v}{1}", c_inline, o.quotes())?
+                }
                 None => write!(f, "{0}{k}", c_inline)?,
             }
         }
