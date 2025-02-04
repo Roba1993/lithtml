@@ -1,6 +1,6 @@
 [package]
 name = "lithtml"
-version = "0.7.0-dev"
+version = "0.7.0"
 edition = "2021"
 license = "MIT"
 authors = ["Robert Schütte <schuetterobert@gmail.com>"]

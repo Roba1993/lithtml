@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.7.0-dev
+## 0.7.0
 - Added possibility to create node and dom manually
 - Renamed errors to warnings within the dom
 - Added formatted html output possibility
