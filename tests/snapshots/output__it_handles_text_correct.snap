@@ -1,0 +1,12 @@
+---
+source: tests/output.rs
+assertion_line: 74
+expression: new_html
+---
+<div>
+	<a href='javascript:void();'>
+		<span>B </span>
+		Budget
+	</a>
+	<div>###BUDGET_INFO###</div>
+</div>

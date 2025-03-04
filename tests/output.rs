@@ -56,3 +56,21 @@ fn it_can_output_complex_html_as_pretty_html() -> Result<()> {
     assert_snapshot!(dom_dom);
     Ok(())
 }
+
+#[test]
+fn it_handles_text_correct() -> Result<()> {
+    let html = indoc!(
+        "<div>
+            <a href='javascript:void();'>
+				<span>B </span>
+				Budget
+			</a>
+				<div>###BUDGET_INFO###</div>
+		</div>"
+    );
+    let mut new_html = Dom::parse(html)?.to_string();
+    new_html = Dom::parse(&new_html)?.to_string();
+    new_html = Dom::parse(&new_html)?.to_string();
+    assert_snapshot!(new_html);
+    Ok(())
+}

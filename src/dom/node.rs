@@ -91,7 +91,7 @@ impl<'s> Node<'s> {
             }
             Node::Text(text) => {
                 o.fmt_depth(f, depth)?;
-                write!(f, "{text}")?;
+                write!(f, "{}", text.trim())?;
             }
             Node::Comment(comment) => {
                 o.fmt_depth(f, depth)?;
