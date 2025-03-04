@@ -71,7 +71,11 @@ impl<'s> Element<'s> {
             .sum();
 
         // count classes length
-        let classes_len = self.classes.iter().map(|c| c.len() + 1).sum::<usize>() + 8;
+        let classes_len = if self.classes.is_empty() {
+            0
+        } else {
+            self.classes.iter().map(|c| c.len() + 1).sum::<usize>() + 8
+        };
 
         // calculate the length of this element
         let e_len = depth + 1 + self.name.len() + attr_len + 1 + classes_len;
