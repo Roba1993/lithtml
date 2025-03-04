@@ -70,8 +70,11 @@ impl<'s> Element<'s> {
             .map(|(k, v)| k.len() + v.as_ref().map(|v| v.len()).unwrap_or(0) + 4)
             .sum();
 
+        // count classes length
+        let classes_len = self.classes.iter().map(|c| c.len() + 1).sum::<usize>() + 8;
+
         // calculate the length of this element
-        let e_len = depth + 1 + self.name.len() + attr_len + 1;
+        let e_len = depth + 1 + self.name.len() + attr_len + 1 + classes_len;
 
         // print in one line or multiline with depth - depending on space
         let c_inline = if e_len > o.max_len && o.new_lines {
@@ -82,6 +85,26 @@ impl<'s> Element<'s> {
         } else {
             String::from(" ")
         };
+
+        // print the classes seperatly
+        if !self.classes.is_empty() {
+            let classes = self
+                .classes
+                .iter()
+                .enumerate()
+                .map(|(i, c)| {
+                    let c = c.trim();
+                    if c.is_empty() {
+                        String::new()
+                    } else if i == 0 {
+                        c.to_string()
+                    } else {
+                        format!(" {c}")
+                    }
+                })
+                .collect::<String>();
+            write!(f, "{0}class={1}{classes}{1}", c_inline, o.quotes())?
+        }
 
         // print the attributes ordered
         let ordered_attributes: BTreeMap<_, _> = self.attributes.iter().collect();

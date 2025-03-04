@@ -74,3 +74,17 @@ fn it_handles_text_correct() -> Result<()> {
     assert_snapshot!(new_html);
     Ok(())
 }
+
+#[test]
+fn it_handles_class_output_correct() -> Result<()> {
+    let html = indoc!(
+        "<div class='one two'>
+			<div class='three four' id='yes'>Test</div>
+		</div>"
+    );
+    let mut new_html = Dom::parse(html)?.to_string();
+    new_html = Dom::parse(&new_html)?.to_string();
+    new_html = Dom::parse(&new_html)?.to_string();
+    assert_snapshot!(new_html);
+    Ok(())
+}

@@ -1,0 +1,8 @@
+---
+source: tests/output.rs
+assertion_line: 88
+expression: new_html
+---
+<div class='one two'>
+	<div class='three four' id='yes'>Test</div>
+</div>
