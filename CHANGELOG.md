@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0
+- Classes are part of the html output
+- Better linebreak for css classes lengths
+- Improved html layout output
+
 ## 0.7.0
 - Added possibility to create node and dom manually
 - Renamed errors to warnings within the dom
